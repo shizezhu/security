@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.szz.security.dao.db.MenuDb" >
+
+  <resultMap id="BaseResultMap" type="cn.szz.security.pojo.po.Menu" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="type" property="type" jdbcType="INTEGER" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="url" property="url" jdbcType="VARCHAR" />
+    <result column="auth_iden" property="authIden" jdbcType="VARCHAR" />
+    <result column="icon" property="icon" jdbcType="VARCHAR" />
+    <result column="sort" property="sort" jdbcType="INTEGER" />
+    <result column="add_time" property="addTime" jdbcType="TIMESTAMP" />
+    <result column="modify_time" property="modifyTime" jdbcType="TIMESTAMP" />
+    <association property="project" column="project_id" javaType="cn.szz.security.pojo.po.Project" 
+    select="cn.szz.security.dao.db.ProjectDb.getById"/>
+    <association property="parentMenu" column="parent_id" javaType="cn.szz.security.pojo.po.Menu" 
+    select="getById"/>
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, project_id, type, parent_id, name, url, auth_iden, icon, sort, add_time, modify_time
+  </sql>
+  
+  <sql id="Base_Where">
+  	<if test="params != null">
+	    <if test="params.id != null">
+	    	and id = #{params.id,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.projectId != null">
+	    	and project_id = #{params.projectId,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.type != null">
+    		and type = #{params.type,jdbcType=INTEGER}
+    	</if>
+	    <if test="params.parentId != null">
+	    	<if test="params.parentId == 0">
+		    	and parent_id is null
+	    	</if>
+	    	<if test="params.parentId != 0">
+	    		and parent_id = #{params.parentId,jdbcType=BIGINT}
+	    	</if>
+	    </if>
+	    <if test="params.name != null">
+    		and name = #{params.name,jdbcType=VARCHAR}
+	    </if>
+	    <if test="params.authIden != null">
+	    	and auth_iden = #{params.authIden,jdbcType=VARCHAR}
+	    </if>
+	    <if test="params.ids != null and params.ids.size > 0">
+	    	and id in 
+	    	<foreach collection="params.ids" item="id" open="(" separator="," close=")">
+	    		#{id,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+		<if test="params.projectIds != null and params.projectIds.size > 0">
+			and project_id in 
+	    	<foreach collection="params.projectIds" item="projectId" open="(" separator="," close=")">
+	    		#{projectId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+		<if test="params.parentIds != null and params.parentIds.size > 0">
+			and parent_id in 
+	    	<foreach collection="params.parentIds" item="parentId" open="(" separator="," close=")">
+	    		#{parentId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+    </if>
+  </sql>
+  
+  <sql id="Base_Where_Search">
+  	<if test="search != null">
+   		and (id like concat('%', #{search,jdbcType=VARCHAR}, '%') or name like concat('%', #{search,jdbcType=VARCHAR}, '%') or url like concat('%', #{search,jdbcType=VARCHAR}, '%') or auth_iden like concat('%', #{search,jdbcType=VARCHAR}, '%'))
+   	</if>
+  </sql>
+  
+  <sql id="Base_Order">
+	<if test="sort != null and sort != ''">
+		order by ${sort}
+		<if test="order != null and order != ''">
+			${order}
+		</if>
+	</if>
+  </sql>
+  
+  <sql id="Base_Limit">
+  	<if test="firstResult != null and maxResult != null">
+		limit ${firstResult}, ${maxResult}
+	</if>
+  </sql>
+  
+  <select id="list" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from menu where 1 = 1
+    <include refid="Base_Where"/>
+    <include refid="Base_Where_Search"/>
+    <include refid="Base_Order"/>
+    <include refid="Base_Limit"/>
+  </select>
+  
+  <select id="count" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+  	select count(*)
+    from menu where 1 = 1
+    <include refid="Base_Where"/>
+    <include refid="Base_Where_Search"/>
+  </select>
+  
+  <select id="get" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from menu where 1 = 1
+    <include refid="Base_Where"/>
+    limit 1
+  </select>
+  
+   <select id="getById" resultMap="BaseResultMap" parameterType="java.lang.Long">
+  	select 
+    <include refid="Base_Column_List" />
+    from menu
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  
+  <delete id="del" parameterType="cn.szz.security.pojo.dto.MybatisParams" >
+    delete from menu
+    where 1 = 1
+    <include refid="Base_Where"/>
+  </delete>
+  
+  <delete id="delById" parameterType="java.lang.Long">
+  	delete from menu where id = #{id,jdbcType=BIGINT}
+  </delete>
+  
+  <insert id="save" parameterType="cn.szz.security.pojo.po.Menu" useGeneratedKeys="true" keyProperty="id" >
+    insert into menu (project_id, type, parent_id, name, url, auth_iden, icon, sort, add_time, modify_time)
+    values (#{project.id,jdbcType=BIGINT}, #{type,jdbcType=INTEGER}, 
+      #{parentMenu.id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, 
+      #{authIden,jdbcType=VARCHAR}, #{icon,jdbcType=VARCHAR}, #{sort,jdbcType=INTEGER}, 
+      #{addTime,jdbcType=TIMESTAMP}, #{modifyTime,jdbcType=TIMESTAMP})
+  </insert>
+  
+  <update id="update" parameterType="cn.szz.security.pojo.po.Menu" >
+    update menu
+    set project_id = #{project.id,jdbcType=BIGINT},
+      type = #{type,jdbcType=INTEGER},
+      parent_id = #{parentMenu.id,jdbcType=BIGINT},
+      name = #{name,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      auth_iden = #{authIden,jdbcType=VARCHAR},
+      icon = #{icon,jdbcType=VARCHAR},
+      sort = #{sort,jdbcType=INTEGER},
+      add_time = #{addTime,jdbcType=TIMESTAMP},
+      modify_time = #{modifyTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  
+  <select id="listId" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select id
+    from menu where 1 = 1
+    <include refid="Base_Where"/>
+  </select>
+  
+  <select id="listAuthIden" resultType="java.lang.String" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select auth_iden
+    from menu where auth_Iden is not null
+    <include refid="Base_Where"/>
+  </select>
+  
+</mapper>

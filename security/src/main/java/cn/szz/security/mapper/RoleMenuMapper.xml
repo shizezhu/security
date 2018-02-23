@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.szz.security.dao.db.RoleMenuDb" >
+
+  <resultMap id="BaseResultMap" type="cn.szz.security.pojo.po.RoleMenu" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="role_id" property="roleId" jdbcType="BIGINT" />
+    <result column="menu_id" property="menuId" jdbcType="BIGINT" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, role_id, menu_id
+  </sql>
+  
+  <sql id="Base_Where">
+  	<if test="params != null">
+	    <if test="params.id != null">
+	    	and id = #{params.id,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.roleId != null">
+    		and role_id = #{params.roleId,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.menuId != null">
+    		and menu_id = #{params.menuId,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.ids != null and params.ids.size > 0">
+	    	and id in 
+	    	<foreach collection="params.ids" item="id" open="(" separator="," close=")">
+	    		#{id,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+  		<if test="params.roleIds != null and params.roleIds.size > 0">
+	    	and role_id in 
+	    	<foreach collection="params.roleIds" item="roleId" open="(" separator="," close=")">
+	    		#{roleId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+  		<if test="params.menuIds != null and params.menuIds.size > 0">
+	    	and menu_id in 
+	    	<foreach collection="params.menuIds" item="menuId" open="(" separator="," close=")">
+	    		#{menuId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+    </if>
+  </sql>
+  
+  <sql id="Base_Order">
+	<if test="sort != null and sort != ''">
+		order by ${sort}
+		<if test="order != null and order != ''">
+			${order}
+		</if>
+	</if>
+  </sql>
+  
+  <sql id="Base_Limit">
+  	<if test="firstResult != null and maxResult != null">
+		limit ${firstResult}, ${maxResult}
+	</if>
+  </sql>
+  
+  <select id="list" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from role_menu where 1 = 1
+    <include refid="Base_Where"/>
+    <include refid="Base_Order"/>
+    <include refid="Base_Limit"/>
+  </select>
+  
+  <select id="count" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+  	select count(*)
+    from role_menu where 1 = 1
+    <include refid="Base_Where"/>
+  </select>
+  
+  <select id="get" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from role_menu where 1 = 1
+    <include refid="Base_Where"/>
+    limit 1
+  </select>
+  
+   <select id="getById" resultMap="BaseResultMap" parameterType="java.lang.Long">
+  	select 
+    <include refid="Base_Column_List" />
+    from role_menu
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  
+  <delete id="del" parameterType="cn.szz.security.pojo.dto.MybatisParams" >
+    delete from role_menu
+    where 1 = 1
+    <include refid="Base_Where"/>
+  </delete>
+  
+  <delete id="delById" parameterType="java.lang.Long">
+  	delete from role_menu where id = #{id,jdbcType=BIGINT}
+  </delete>
+  
+  <insert id="save" parameterType="cn.szz.security.pojo.po.RoleMenu" useGeneratedKeys="true" keyProperty="id" >
+    insert into role_menu (id, role_id, menu_id)
+    values (#{id,jdbcType=BIGINT}, #{roleId,jdbcType=BIGINT}, #{menuId,jdbcType=BIGINT})
+  </insert>
+  
+  <update id="update" parameterType="cn.szz.security.pojo.po.RoleMenu" >
+    update role_menu
+    set role_id = #{roleId,jdbcType=BIGINT},
+      menu_id = #{menuId,jdbcType=BIGINT}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  
+  <select id="listRoleId" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams" >
+    select role_id
+    from role_menu where 1 = 1
+    <include refid="Base_Where"/>
+  </select>
+  
+  <select id="listMenuId" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams" >
+    select menu_id
+    from role_menu where 1 = 1
+    <include refid="Base_Where"/>
+  </select>
+  
+</mapper>

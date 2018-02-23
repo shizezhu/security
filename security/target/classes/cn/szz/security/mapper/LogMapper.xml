@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.szz.security.dao.db.LogDb" >
+
+  <resultMap id="BaseResultMap" type="cn.szz.security.pojo.po.Log" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_ip" property="userIp" jdbcType="VARCHAR" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="descr" property="descr" jdbcType="VARCHAR" />
+    <result column="type" property="type" jdbcType="INTEGER" />
+    <result column="content" property="content" jdbcType="LONGVARCHAR" />
+    <result column="add_time" property="addTime" jdbcType="TIMESTAMP" />
+    <association property="project" column="project_id" javaType="cn.szz.security.pojo.po.Project" 
+    select="cn.szz.security.dao.db.ProjectDb.getById"/>
+    <association property="user" column="user_id" javaType="cn.szz.security.pojo.po.User" 
+    select="cn.szz.security.dao.db.UserDb.getById"/>
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, project_id, user_id, user_ip, name, descr, type, content, add_time
+  </sql>
+  
+  <sql id="Base_Where">
+  	<if test="params != null">
+	    <if test="params.id != null">
+	    	and id = #{params.id,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.projectId != null">
+	    	and project_id = #{params.projectId,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.userId != null">
+	    	and user_id = #{params.userId,jdbcType=BIGINT}
+	    </if>
+	    <if test="params.name != null">
+    		and name = #{params.name,jdbcType=VARCHAR}
+	    </if>
+	    <if test="params.descr != null">
+    		and descr = #{params.descr,jdbcType=VARCHAR}
+	    </if>
+	    <if test="params.type != null">
+    		and type = #{params.type,jdbcType=INTEGER}
+    	</if>
+	    <if test="params.ids != null and params.ids.size > 0">
+	    	and id in 
+	    	<foreach collection="params.ids" item="id" open="(" separator="," close=")">
+	    		#{id,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+		<if test="params.projectIds != null and params.projectIds.size > 0">
+			and project_id in 
+	    	<foreach collection="params.projectIds" item="projectId" open="(" separator="," close=")">
+	    		#{projectId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+		<if test="params.userIds != null and params.userIds.size > 0">
+			and user_id in 
+	    	<foreach collection="params.userIds" item="userId" open="(" separator="," close=")">
+	    		#{userId,jdbcType=BIGINT}
+	    	</foreach>
+		</if>
+    </if>
+  </sql>
+  
+  <sql id="Base_Where_Search">
+  	<if test="search != null">
+   		and (id like concat('%', #{search,jdbcType=VARCHAR}, '%') or name like concat('%', #{search,jdbcType=VARCHAR}, '%') or descr like concat('%', #{search,jdbcType=VARCHAR}, '%') or content like concat('%', #{search,jdbcType=VARCHAR}, '%'))
+   	</if>
+  </sql>
+  
+  <sql id="Base_Order">
+	<if test="sort != null and sort != ''">
+		order by ${sort}
+		<if test="order != null and order != ''">
+			${order}
+		</if>
+	</if>
+  </sql>
+  
+  <sql id="Base_Limit">
+  	<if test="firstResult != null and maxResult != null">
+		limit ${firstResult}, ${maxResult}
+	</if>
+  </sql>
+  
+  <select id="list" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from log where 1 = 1
+    <include refid="Base_Where"/>
+    <include refid="Base_Where_Search"/>
+    <include refid="Base_Order"/>
+    <include refid="Base_Limit"/>
+  </select>
+  
+  <select id="count" resultType="java.lang.Long" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+  	select count(*)
+    from log where 1 = 1
+    <include refid="Base_Where"/>
+    <include refid="Base_Where_Search"/>
+  </select>
+  
+   <select id="get" resultMap="BaseResultMap" parameterType="cn.szz.security.pojo.dto.MybatisParams">
+    select 
+    <include refid="Base_Column_List" />
+    from log where 1 = 1
+    <include refid="Base_Where"/>
+    limit 1
+  </select>
+  
+   <select id="getById" resultMap="BaseResultMap" parameterType="java.lang.Long">
+  	select 
+    <include refid="Base_Column_List" />
+    from log
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  
+  <delete id="del" parameterType="cn.szz.security.pojo.dto.MybatisParams" >
+    delete from log
+    where 1 = 1
+    <include refid="Base_Where"/>
+  </delete>
+  
+  <delete id="delById" parameterType="java.lang.Long">
+  	delete from log where id = #{id,jdbcType=BIGINT}
+  </delete>
+  
+  <insert id="save" parameterType="cn.szz.security.pojo.po.Log" useGeneratedKeys="true" keyProperty="id" >
+    insert into log (project_id, user_id, user_ip, name, descr, type, content, add_time)
+    values (#{project.id,jdbcType=BIGINT}, #{user.id,jdbcType=BIGINT}, 
+      #{userIp,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{descr,jdbcType=VARCHAR},
+      #{type,jdbcType=INTEGER}, #{content,jdbcType=LONGVARCHAR}, #{addTime,jdbcType=TIMESTAMP})
+  </insert>
+  
+   <update id="update" parameterType="cn.szz.security.pojo.po.Log" >
+    update log
+    set project_id = #{project.id,jdbcType=BIGINT},
+      user_id = #{user.id,jdbcType=BIGINT},
+      user_ip = #{userIp,jdbcType=VARCHAR},
+      name = #{name,jdbcType=VARCHAR},
+      descr = #{descr,jdbcType=VARCHAR},
+      type = #{type,jdbcType=INTEGER},
+      add_time = #{addTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:lang="http://www.springframework.org/schema/lang"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-4.3.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.3.xsd">
+	
+	<description>security sdk配置</description>
+		
+	<util:properties id="prop">	
+		<!-- project id -->
+		<prop key="project_id">0</prop>
+		<!-- security project url -->
+		<prop key="parent_url">http://localhost:8080/security</prop>
+		<!-- security hessian url -->
+		<prop key="securityHessianSdk_serviceUrl">/hessian/sdk</prop>
+		<!-- cas server url -->
+		<prop key="casServerUrlPrefix">http://localhost:8080/cas</prop>
+		<!-- cas url -->
+		<prop key="casService">http://localhost/DC/shiro-cas</prop>
+	</util:properties>
+	
+	<!-- security rmi hessian -->
+	<bean id="securityHessianClient" class="org.springframework.remoting.caucho.HessianProxyFactoryBean">
+		<property name="serviceUrl" value="#{prop.parent_url}#{prop.securityHessianSdk_serviceUrl}" />
+		<property name="serviceInterface" value="cn.szz.sdk.rmi.client.SecurityHessianClient" />
+		<property name="overloadEnabled" value="true" />
+	</bean>    
+
+	<!-- sdk服务类 -->
+    <bean name="securitySdkService" class="cn.szz.sdk.DefultSecuritySdkServiceImpl">
+    	<property name="projectId" value="#{prop.project_id}"></property>
+    	<property name="securityHessianClient" ref="securityHessianClient"/>
+    </bean>
+
+	<!-- 配置安全管理器. -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<!-- 缓存管理器. -->
+		<property name="cacheManager" ref="cacheManager"></property>
+		<!-- 验证器. -->
+		<property name="authenticator" ref="authenticator"></property>
+		<!-- Realm. -->
+		<!-- 未使用CAS时注释此realm -->
+		<property name="realm" ref="customCasRealm"></property>
+		<!-- 使用CAS时注释此realm-->
+		<!-- <property name="realm" ref="customJdbcRealm"> -->
+		
+	</bean>
+	
+	<!-- 缓存管理器. -->
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<!-- 缓存管理器配置文件. -->
+		<property name="cacheManagerConfigFile" value="classpath:ehcache.xml"></property>
+	</bean>
+	
+	<!-- 验证器. -->
+	<bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+		<!-- 认证策略. -->
+		<property name="authenticationStrategy">
+			<!-- 只要有一个匹配(默认). -->
+			<bean class="org.apache.shiro.authc.pam.AtLeastOneSuccessfulStrategy"></bean>
+			<!-- 所有都要匹配. -->
+			<!-- <bean class="org.apache.shiro.authc.pam.AllSuccessfulStrategy"></bean> -->
+			<!-- 第一个匹配. -->
+			<!-- <bean class="org.apache.shiro.authc.pam.FirstSuccessfulStrategy"></bean> -->
+		</property>
+	</bean>
+	
+	<!-- 自定义JDBC Realm. 使用CAS时请注释此realm -->
+	<!-- <bean id="customJdbcRealm" class="cn.szz.sdk.realm.CustomJdbcRealm">
+		<property name="securitySdkService" ref="securitySdkService"></property>
+	</bean> -->
+	
+	<!-- 自定义Cas Realm 未使用CAS时请注释此realm-->
+	<bean id="customCasRealm" class="cn.szz.sdk.realm.CustomCasRealm">
+		<property name="casServerUrlPrefix" value="#{prop.casServerUrlPrefix}"></property>
+		<property name="casService" value="#{prop.casService}"></property>
+		<property name="securitySdkService" ref="securitySdkService"></property>
+	</bean>
+	
+	<!-- 配置 LifecycleBeanPostProcessor. 可以自定的来调用配置在 Spring IOC 容器中 shiro bean 的生命周期方法. -->     
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+
+	<!-- 启用 IOC 容器中使用 shiro 的注解. 但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用.  -->
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+    
+    <!-- shiroFilterFactory 必须和 web.xml 文件中配置的 DelegatingFilterProxy 的 <filter-name> 一致.
+                      若不一致, 则会抛出: NoSuchBeanDefinitionException. 因为 Shiro 会来 IOC 容器中查找和 <filter-name> 名字对应的 filter bean. -->
+    <bean id="shiroFilterFactory" class="cn.szz.sdk.factory.ShiroFilterFactory">
+    	<property name="securitySdkService" ref="securitySdkService"/>
+        <property name="securityManager" ref="securityManager"/>
+        <!-- 使用CAS时请注释此loginUrl -->
+        <!-- <property name="loginUrl" value="/login"/> -->
+        <!-- 未使用CAS时请注释此loginUrl -->
+        <property name="loginUrl" value="#{prop.casServerUrlPrefix}/login?service=#{prop.casService}"/>
+        <property name="successUrl" value="#{prop.parent_url}/index"/>
+        <property name="unauthorizedUrl" value="#{prop.parent_url}/403"/>
+        <property name="filters">
+        	<map>
+        		<entry key="role">
+        			<bean class="cn.szz.sdk.filter.RoleAuthorizationFilter"></bean>
+        		</entry>
+        		<entry key="perms">
+        			<bean class="cn.szz.sdk.filter.PermissionsAuthorizationFilter"></bean>
+        		</entry>
+        		<!-- 未使用CAS时请注释CasFilter -->
+        		<entry key="cas">
+        			<bean class="org.apache.shiro.cas.CasFilter">
+        				<property name="failureUrl" value="#{prop.parent_url}/500"/>
+        			</bean>
+        		</entry>
+        		<entry key="logout">
+        			<bean class="org.apache.shiro.web.filter.authc.LogoutFilter">
+        				<property name="redirectUrl" value="#{prop.casServerUrlPrefix}/logout?service=#{prop.casService}"/>
+        			</bean>
+        		</entry>
+        	</map>
+        </property>
+        <property name="filterChainDefinitions">
+        	<value>
+        		<!-- 未使用CAS时请注释/shiro-cas = cas -->
+        		/shiro-cas = cas
+        		/hessian/reload = anon
+        		/css/** = anon
+				/img/** = anon
+				/js/** = anon
+				/fonts/** = anon
+				/favicon.ico = anon
+				<!-- 使用CAS时请注释 /login = anon -->
+				<!-- /login = anon -->
+				<!-- 使用CAS时请注释  /user/smLogin = anon-->
+				<!-- /user/smLogin = anon -->
+				/403 = anon
+				/404 = anon
+				/500 = anon
+				/logout = logout
+				/** = authc
+        	</value>
+        </property>
+    </bean>
+    
+    <!-- 刷新数据服务远程接口 -->
+    <bean name="reloadHessianService" class="cn.szz.sdk.rmi.service.impl.ReloadHessianServiceImpl" autowire="byType"/>
+    
+</beans>
